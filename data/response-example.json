@@ -1,0 +1,44 @@
+{
+  "coord": {
+    "lon": -111.32,
+    "lat": 45.758
+  },
+  "weather": [
+    {
+      "id": 804,
+      "main": "Clouds",
+      "description": "overcast clouds",
+      "icon": "04d"
+    }
+  ],
+  "base": "stations",
+  "main": {
+    "temp": 10.1,
+    "feels_like": 8.65,
+    "temp_min": 9.58,
+    "temp_max": 10.28,
+    "pressure": 1011,
+    "humidity": 57
+  },
+  "visibility": 10000,
+  "wind": {
+    "speed": 5.14,
+    "deg": 240,
+    "gust": 8.23
+  },
+  "clouds": {
+    "all": 100
+  },
+  "dt": 1716386539,
+  "sys": {
+    "type": 2,
+    "id": 2008451,
+    "country": "US",
+    "sunrise": 1716378370,
+    "sunset": 1716433089
+  },
+  "timezone": -21600,
+  "id": 5637141,
+  "name": "Amsterdam",
+  "cod": 200
+}

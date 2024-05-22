@@ -1,7 +1,7 @@
 <?php
 require_once dirname(__FILE__) . '/../config.php';
 $apiKey = openweathermap_api_key;
-$cityId = "5637141";
+$cityId = "2759794";
 $googleApiUrl = "https://api.openweathermap.org/data/2.5/weather?id=" . $cityId . "&lang=en&units=metric&APPID=" . $apiKey;
 
 $ch = curl_init();
@@ -26,4 +26,22 @@ if(!isset($data->weather[0]->description)){
 }
 
 $currentWeather = $data->weather[0]->description;
-echo 'Current weather is: ' . $currentWeather;
+$feelsLike = round($data->main->feels_like);
+$windSpeed = $data->wind->speed;
+
+$windCondition = '';
+if ($windSpeed < 1) {
+    $windCondition = 'almost no wind';
+} elseif($windSpeed > 1 && $windSpeed <= 10) {
+    $windCondition = 'light breeze';
+} elseif($windSpeed > 10 && $windSpeed <= 20) {
+    $windCondition = 'moderate wind';
+} elseif($windSpeed > 20 && $windSpeed <= 30) {
+    $windCondition = 'strong wind';
+} else {
+    $windCondition = 'storm outside';
+}
+
+echo 'Current weather is: ' . $currentWeather . '. ';
+echo 'It feels like ' . $feelsLike . '°C. ';
+echo 'There\'s ' . $windCondition . '.';
