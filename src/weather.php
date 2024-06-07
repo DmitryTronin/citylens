@@ -29,19 +29,13 @@ $currentWeather = $data->weather[0]->description;
 $feelsLike = round($data->main->feels_like);
 $windSpeed = $data->wind->speed;
 
-$windCondition = '';
-if ($windSpeed < 1) {
-    $windCondition = 'almost no wind';
-} elseif($windSpeed > 1 && $windSpeed <= 10) {
-    $windCondition = 'light breeze';
-} elseif($windSpeed > 10 && $windSpeed <= 20) {
-    $windCondition = 'moderate wind';
-} elseif($windSpeed > 20 && $windSpeed <= 30) {
-    $windCondition = 'strong wind';
-} else {
-    $windCondition = 'storm outside';
-}
-
+$windCondition = match (true) {
+    $windSpeed < 1 => 'almost no wind',
+    $windSpeed <= 10 => 'light breeze',
+    $windSpeed <= 20 => 'moderate wind',
+    $windSpeed <= 30 => 'strong wind',
+    default => 'storm outside',
+};
 echo 'Current weather is: ' . $currentWeather . '. ';
 echo 'It feels like ' . $feelsLike . '°C. ';
 echo 'There\'s ' . $windCondition . '.';
