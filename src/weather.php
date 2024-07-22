@@ -6,6 +6,7 @@ $googleApiUrl = "https://api.openweathermap.org/data/2.5/weather?id=" . $cityId 
 
 $ch = curl_init();
 
+
 curl_setopt($ch, CURLOPT_HEADER, 0);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 curl_setopt($ch, CURLOPT_URL, $googleApiUrl);
@@ -14,14 +15,14 @@ curl_setopt($ch, CURLOPT_VERBOSE, 0);
 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
 $response = curl_exec($ch);
 
-if(!$response) {
+if (!$response) {
     die('Error: "' . curl_error($ch) . '" - Code: ' . curl_errno($ch));
 }
 
 curl_close($ch);
 $data = json_decode($response);
 
-if(!isset($data->weather[0]->description)){
+if (!isset($data->weather[0]->description)) {
     die('No weather data available');
 }
 
@@ -39,3 +40,4 @@ $windCondition = match (true) {
 echo 'Current weather is: ' . $currentWeather . '. ';
 echo 'It feels like ' . $feelsLike . '°C. ';
 echo 'There\'s ' . $windCondition . '.';
+?>
