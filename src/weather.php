@@ -7,6 +7,7 @@ $googleApiUrl = "https://api.openweathermap.org/data/2.5/weather?id=" . $cityId 
 $ch = curl_init();
 
 
+
 curl_setopt($ch, CURLOPT_HEADER, 0);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 curl_setopt($ch, CURLOPT_URL, $googleApiUrl);
@@ -40,4 +41,3 @@ $windCondition = match (true) {
 echo 'Current weather is: ' . $currentWeather . '. ';
 echo 'It feels like ' . $feelsLike . '°C. ';
 echo 'There\'s ' . $windCondition . '.';
-?>
