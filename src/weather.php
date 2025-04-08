@@ -6,8 +6,6 @@ $googleApiUrl = "https://api.openweathermap.org/data/2.5/weather?id=" . $cityId 
 
 $ch = curl_init();
 
-
-
 curl_setopt($ch, CURLOPT_HEADER, 0);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 curl_setopt($ch, CURLOPT_URL, $googleApiUrl);
@@ -30,6 +28,10 @@ if (!isset($data->weather[0]->description)) {
 $currentWeather = $data->weather[0]->description;
 $feelsLike = round($data->main->feels_like);
 $windSpeed = $data->wind->speed;
+$cityName = $data->name;
+$country = $data->sys->country;
+$temp = round($data->main->temp);
+$humidity = $data->main->humidity;
 
 $windCondition = match (true) {
     $windSpeed < 1 => 'almost no wind',
@@ -38,6 +40,9 @@ $windCondition = match (true) {
     $windSpeed <= 30 => 'strong wind',
     default => 'storm outside',
 };
-echo 'Current weather is: ' . $currentWeather . '. ';
-echo 'It feels like ' . $feelsLike . '°C. ';
-echo 'There\'s ' . $windCondition . '.';
+
+echo "<p><strong>Location:</strong> {$cityName}, {$country}</p>";
+echo "<p><strong>Current weather:</strong> {$currentWeather}</p>";
+echo "<p><strong>Temperature:</strong> {$temp}°C (feels like {$feelsLike}°C)</p>";
+echo "<p><strong>Humidity:</strong> {$humidity}%</p>";
+echo "<p><strong>Wind:</strong> {$windSpeed} m/s - {$windCondition}</p>";
