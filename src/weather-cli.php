@@ -1,3 +1,4 @@
+#!/usr/bin/env php
 <?php
 require_once dirname(__FILE__) . '/../config.php';
 $apiKey = openweathermap_api_key;
@@ -15,16 +16,17 @@ curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
 $response = curl_exec($ch);
 
 if (!$response) {
-    die('Error: "' . curl_error($ch) . '" - Code: ' . curl_errno($ch));
+    echo "Error: \"" . curl_error($ch) . "\" - Code: " . curl_errno($ch) . PHP_EOL;
+    exit(1);
 }
 
 curl_close($ch);
 $data = json_decode($response);
 
 if (!isset($data->weather[0]->description)) {
-    die('No weather data available');
+    echo "No weather data available" . PHP_EOL;
+    exit(1);
 }
-
 
 $currentWeather = $data->weather[0]->description;
 $feelsLike = round($data->main->feels_like);
@@ -42,9 +44,10 @@ $windCondition = match (true) {
     default => 'storm outside',
 };
 
-echo "<p><strong>Location:</strong> {$cityName}, {$country}</p>";
-echo "<p><strong>Current weather:</strong> {$currentWeather}</p>";
-echo "<p><strong>Temperature:</strong> {$temp}°C (feels like {$feelsLike}°C)</p>";
-echo "<p><strong>Humidity:</strong> {$humidity}%</p>";
-echo "<p><strong>Wind:</strong> {$windSpeed} m/s - {$windCondition}</p>";
+echo "Location: {$cityName}, {$country}" . PHP_EOL;
+echo "Current weather: {$currentWeather}" . PHP_EOL;
+echo "Temperature: {$temp}°C (feels like {$feelsLike}°C)" . PHP_EOL;
+echo "Humidity: {$humidity}%" . PHP_EOL;
+echo "Wind: {$windSpeed} m/s - {$windCondition}" . PHP_EOL;
 
+flush();
