@@ -27,6 +27,17 @@ if (!isset($data->weather[0]->description)) {
 
 
 $currentWeather = $data->weather[0]->description;
+$weatherIcon = match (strtolower($data->weather[0]->main)) {
+    'clear' => 'CLEAR_DAY',
+    'clouds' => 'CLOUDY',
+    'rain' => 'RAIN',
+    'snow' => 'SNOW',
+    'sleet' => 'SLEET',
+    'wind' => 'WIND',
+    'fog' => 'FOG',
+    'thunderstorm' => 'THUNDER',
+    default => 'PARTLY_CLOUDY_DAY',
+};
 $feelsLike = round($data->main->feels_like);
 $windSpeed = $data->wind->speed;
 $cityName = $data->name;
@@ -43,7 +54,7 @@ $windCondition = match (true) {
 };
 
 echo "<p><strong>Location:</strong> {$cityName}, {$country}</p>";
-echo "<p><strong>Current weather:</strong> {$currentWeather}</p>";
+echo "<p><strong>Current weather:</strong> {$currentWeather} <span data-weather-icon=\"{$weatherIcon}\"></span></p>";
 echo "<p><strong>Temperature:</strong> {$temp}°C (feels like {$feelsLike}°C)</p>";
 echo "<p><strong>Humidity:</strong> {$humidity}%</p>";
 echo "<p><strong>Wind:</strong> {$windSpeed} m/s - {$windCondition}</p>";
