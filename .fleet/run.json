@@ -4,7 +4,7 @@
             "type": "command",
             "name": "Start built-in PHP server",
             "program": "php",
-            "args": ["-S", "localhost:8000"]
+            "args": ["-S", "localhost:8001"]
         }
     ]
 }
