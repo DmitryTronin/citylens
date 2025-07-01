@@ -44,15 +44,25 @@ if (!isset($data->weather[0]->description)) {
 
 
 $currentWeather = $data->weather[0]->description;
-$weatherIcon = match (strtolower($data->weather[0]->main)) {
-    'clear' => 'CLEAR_DAY',
-    'clouds' => 'CLOUDY',
-    'rain' => 'RAIN',
-    'snow' => 'SNOW',
-    'sleet' => 'SLEET',
-    'wind' => 'WIND',
-    'fog' => 'FOG',
-    'thunderstorm' => 'THUNDER',
+$weatherId = $data->weather[0]->id;
+
+$weatherIcon = match (true) {
+    $weatherId >= 200 && $weatherId < 300 => 'THUNDER',
+    $weatherId >= 300 && $weatherId < 400 => 'SLEET',
+    $weatherId >= 500 && $weatherId < 600 => ($weatherId == 511 ? 'SNOW' : 'RAIN'),
+    $weatherId >= 600 && $weatherId < 700 => match (true) {
+        $weatherId == 611 || $weatherId == 612 || $weatherId == 613 => 'SLEET',
+        default => 'SNOW',
+    },
+    $weatherId >= 700 && $weatherId < 800 => match ($weatherId) {
+        741 => 'FOG',
+        781 => 'WIND',
+        default => 'FOG',
+    },
+    $weatherId == 800 => 'CLEAR_DAY',
+    $weatherId == 801 => 'PARTLY_CLOUDY_DAY',
+    $weatherId == 802 => 'PARTLY_CLOUDY_DAY',
+    $weatherId == 803, $weatherId == 804 => 'CLOUDY',
     default => 'PARTLY_CLOUDY_DAY',
 };
 $feelsLike = round($data->main->feels_like);
