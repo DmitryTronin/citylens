@@ -1,5 +1,22 @@
 <?php
-require_once dirname(__FILE__) . '/../config.php';
+$configPath = dirname(__FILE__) . '/../config.php';
+
+if (!file_exists($configPath)) {
+    die(
+        '<b>Error:</b> <code>config.php</code> file is missing.<br>' .
+        'Please create it and add your OpenWeatherMap API key.'
+    );
+}
+
+require_once $configPath;
+
+if (!defined('openweathermap_api_key') || !openweathermap_api_key) {
+    die(
+        '<b>Error:</b> OpenWeatherMap API key is not defined in <code>config.php</code>.<br>' .
+        'Add: <code>define("openweathermap_api_key", "your-api-key");</code>'
+    );
+}
+
 $apiKey = openweathermap_api_key;
 $cityId = "2759794";
 $googleApiUrl = "https://api.openweathermap.org/data/2.5/weather?id=" . $cityId . "&lang=en&units=metric&APPID=" . $apiKey;
