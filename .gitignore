@@ -4,3 +4,4 @@ data/city.list.json
 
 vendor/
 .idea/
+.air/settings.json
