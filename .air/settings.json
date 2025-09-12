@@ -1,5 +1,4 @@
 {
-    "claude.init.initialization": false,
     "ai.embeddings.indexing": true,
     "ai.embeddings.indexing.auto": true
 }
