@@ -97,9 +97,11 @@ $windCondition = match (true) {
     default => 'storm outside',
 };
 
-echo "<p><strong>Location:</strong> {$cityName}, {$country}</p>";
-echo "<p><strong>Current weather:</strong> {$currentWeather} <span data-weather-icon=\"{$weatherIcon}\"></span></p>";
-echo "<p><strong>Temperature:</strong> {$temp}°C (feels like {$feelsLike}°C)</p>";
-echo "<p><strong>Humidity:</strong> {$humidity}%</p>";
-echo "<p><strong>Wind:</strong> {$windSpeed} m/s - {$windCondition}</p>";
+echo "<div style='color: #00ffff; font-family: monospace;'>";
+echo "<p>║ <span style='color: #ffff00;'>LOCATION.......:</span> {$cityName}, {$country} ║</p>";
+echo "<p>║ <span style='color: #ffff00;'>CONDITION......:</span> " . strtoupper($currentWeather) . " ║</p>";
+echo "<p>║ <span style='color: #ffff00;'>TEMPERATURE....:</span> {$temp}°C (FEELS LIKE {$feelsLike}°C) ║</p>";
+echo "<p>║ <span style='color: #ffff00;'>HUMIDITY.......:</span> {$humidity}% ║</p>";
+echo "<p>║ <span style='color: #ffff00;'>WIND...........:</span> {$windSpeed} M/S - " . strtoupper($windCondition) . " ║</p>";
+echo "</div>";
 
