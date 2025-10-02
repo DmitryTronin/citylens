@@ -97,11 +97,9 @@ $windCondition = match (true) {
     default => 'storm outside',
 };
 
-echo "<div style='color: #00ffff; font-family: monospace;'>";
-echo "<p>║ <span style='color: #ffff00;'>LOCATION.......:</span> {$cityName}, {$country} ║</p>";
-echo "<p>║ <span style='color: #ffff00;'>CONDITION......:</span> " . strtoupper($currentWeather) . " ║</p>";
-echo "<p>║ <span style='color: #ffff00;'>TEMPERATURE....:</span> {$temp}°C (FEELS LIKE {$feelsLike}°C) ║</p>";
-echo "<p>║ <span style='color: #ffff00;'>HUMIDITY.......:</span> {$humidity}% ║</p>";
-echo "<p>║ <span style='color: #ffff00;'>WIND...........:</span> {$windSpeed} M/S - " . strtoupper($windCondition) . " ║</p>";
-echo "</div>";
+echo "<p><span class='weather-label'>Location</span> <span class='weather-value'>{$cityName}, {$country}</span></p>";
+echo "<p><span class='weather-label'>Condition</span> <span class='weather-value'>" . ucfirst($currentWeather) . "</span></p>";
+echo "<p><span class='weather-label'>Temperature</span> <span class='weather-value'>{$temp}°C (feels like {$feelsLike}°C)</span></p>";
+echo "<p><span class='weather-label'>Humidity</span> <span class='weather-value'>{$humidity}%</span></p>";
+echo "<p><span class='weather-label'>Wind</span> <span class='weather-value'>{$windSpeed} m/s - " . ucfirst($windCondition) . "</span></p>";
 
