@@ -16,7 +16,10 @@
         
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            background:
+                radial-gradient(circle at 78% 12%, rgba(255, 245, 190, 0.95) 0%, rgba(255, 245, 190, 0.45) 8%, transparent 24%),
+                linear-gradient(180deg, #5fc8ff 0%, #8ddcff 42%, #c8efff 100%);
+            background-attachment: fixed;
             min-height: 100vh;
             padding: 20px;
             color: #2d3748;
