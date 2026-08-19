@@ -1,70 +1,38 @@
 #!/usr/bin/env php
 <?php
-require_once dirname(__FILE__) . '/../config.php';
-
-function logMessage($message) {
-    $timestamp = date('Y-m-d H:i:s');
-    error_log("[$timestamp] $message" . PHP_EOL, 3, __DIR__ . '/../logs/weather.log');
+declare(strict_types=1);
+use CityLens\ApiKey;
+use CityLens\Cache\FileCache;
+use CityLens\Cli\CliOptions;
+use CityLens\Exception\WeatherException;
+use CityLens\Http\CurlHttpClient;
+use CityLens\OpenWeatherMapClient;
+use CityLens\ReportFormatter;
+use CityLens\WeatherResponseParser;
+use CityLens\WeatherService;
+$root = dirname(__DIR__);
+$autoload = $root . '/vendor/autoload.php';
+if (!is_file($autoload)) { fwrite(STDERR, "Dependencies are missing. Run composer install.\n"); exit(1); }
+require $autoload;
+$usage = "Usage: php src/weather-cli.php [--city=\"Berlin\"] [--units=metric|imperial] [--fixture=FILE]\n       php src/weather-cli.php --help\n";
+try {
+    $options = CliOptions::parse($argv);
+    if ($options->help) { fwrite(STDOUT, $usage); exit(0); }
+    $parser = new WeatherResponseParser();
+    if ($options->fixture !== null) {
+        if (!is_file($options->fixture) || !is_readable($options->fixture)) { throw new InvalidArgumentException("Fixture file is not readable: {$options->fixture}"); }
+        $contents = file_get_contents($options->fixture);
+        if ($contents === false) { throw new InvalidArgumentException("Unable to read fixture: {$options->fixture}"); }
+        $report = $parser->parse($contents, $options->units);
+    } else {
+        $client = new OpenWeatherMapClient(new CurlHttpClient(), $parser, ApiKey::load($root));
+        $report = (new WeatherService($client, new FileCache($root . '/cache', 600)))->weatherFor($options->city, $options->units);
+    }
+    fwrite(STDOUT, ReportFormatter::cli($report));
+} catch (InvalidArgumentException $e) {
+    fwrite(STDERR, 'Error: ' . $e->getMessage() . "\n\n" . $usage); exit(2);
+} catch (WeatherException $e) {
+    fwrite(STDERR, 'Error: ' . $e->safeMessage() . "\n"); exit(1);
+} catch (Throwable $e) {
+    error_log($e->getMessage()); fwrite(STDERR, "Error: An unexpected error occurred.\n"); exit(1);
 }
-
-$apiKey = openweathermap_api_key;
-$cityId = "2759794";
-$googleApiUrl = "https://api.openweathermap.org/data/2.5/weather?id=" . $cityId . "&lang=en&units=metric&APPID=" . $apiKey;
-
-logMessage("Starting weather fetch for city ID: $cityId");
-
-$ch = curl_init();
-
-curl_setopt($ch, CURLOPT_HEADER, 0);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-curl_setopt($ch, CURLOPT_URL, $googleApiUrl);
-curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-curl_setopt($ch, CURLOPT_VERBOSE, 0);
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-$response = curl_exec($ch);
-
-if (!$response) {
-    $error = "cURL error: \"" . curl_error($ch) . "\" - Code: " . curl_errno($ch);
-    logMessage($error);
-    echo "Error: \"" . curl_error($ch) . "\" - Code: " . curl_errno($ch) . PHP_EOL;
-    exit(1);
-}
-
-logMessage("Successfully received API response");
-
-curl_close($ch);
-$data = json_decode($response);
-
-if (!isset($data->weather[0]->description)) {
-    logMessage("Error: No weather data available in API response");
-    echo "No weather data available" . PHP_EOL;
-    exit(1);
-}
-
-logMessage("Successfully parsed weather data");
-
-$currentWeather = $data->weather[0]->description;
-$feelsLike = round($data->main->feels_like);
-$windSpeed = $data->wind->speed;
-$cityName = $data->name;
-$country = $data->sys->country;
-$temp = round($data->main->temp);
-$humidity = $data->main->humidity;
-
-$windCondition = match (true) {
-    $windSpeed < 1 => 'almost no wind',
-    $windSpeed <= 10 => 'light breeze',
-    $windSpeed <= 20 => 'moderate wind',
-    $windSpeed <= 30 => 'strong wind',
-    default => 'storm outside',
-};
-
-logMessage("Displaying weather for {$cityName}, {$country}: {$currentWeather}, {$temp}°C");
-
-echo "Location: {$cityName}, {$country}" . PHP_EOL;
-echo "Current weather: {$currentWeather}" . PHP_EOL;
-echo "Temperature: {$temp}°C (feels like {$feelsLike}°C)" . PHP_EOL;
-echo "Humidity: {$humidity}%" . PHP_EOL;
-echo "Wind: {$windSpeed} m/s - {$windCondition}" . PHP_EOL;
-
-flush();

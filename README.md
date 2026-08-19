@@ -1,51 +1,76 @@
 # CityLens Weather
 
-A weather application that provides real-time weather information using the OpenWeatherMap API. Includes both web interface and command-line interface.
+CityLens provides current OpenWeatherMap conditions through a responsive web search and a command-line interface. Both interfaces use the same response parser, report model, icon and wind mappings, API error handling, and file cache.
 
-## Features
+## Requirements and setup
 
-- **Web Interface** (`index.php`): Visual weather display with animated weather icons using Skycons
-- **CLI Interface** (`src/weather-cli.php`): Command-line weather reports with logging
-- **Mock Data Support** (`src/weather-mock.php`): Testing without API calls
-- **Responsive Design**: Clean, centered layout with weather cards
+- PHP 8.2 with cURL and JSON
+- Composer
+- An [OpenWeatherMap API key](https://openweathermap.org/api)
 
-## Requirements
+Install dependencies and configure the preferred environment variable:
 
-- PHP 8.2+
-- cURL extension
-- OpenWeatherMap API key
+```bash
+composer install
+export OPENWEATHERMAP_API_KEY="your-api-key"
+```
 
-## Setup
+For backward compatibility, a local, ignored `config.php` is also supported:
 
-1. Get your API key at https://openweathermap.org/api
-
-2. Create `config.php` in the root directory:
 ```php
 <?php
-define('openweathermap_api_key', 'your-api-key-here');
+define('openweathermap_api_key', 'your-api-key');
 ```
 
-3. For API requests by city ID, find city IDs at https://bulk.openweathermap.org/sample/
+Never commit the key or `config.php`.
 
-## Usage
+## Web usage
 
-- **Web**: Access `index.php` in your browser
-- **CLI**: Run `php src/weather-cli.php` from the command line
+Serve the project root, then open the displayed address and search by city. Amsterdam and metric units are the defaults.
 
-## Project Structure
-
+```bash
+php -S localhost:8080
 ```
-/
-├── index.php              # Main web interface
-├── config.php             # API configuration (create manually)
-├── composer.json          # PHP dependencies
-├── src/
-│   ├── weather.php        # Core weather fetching logic
-│   ├── weather-cli.php    # Command-line interface
-│   ├── weather-mock.php   # Mock data for testing
-│   ├── time-date.php      # Date/time utilities
-│   └── version.php        # Version information
-├── skycons/               # Weather icon library
-├── data/                  # Sample API responses
-└── logs/                  # CLI logging output
+
+Choose Metric for Celsius and m/s or Imperial for Fahrenheit and mph. Submitted values remain selected after the request, including validation or service errors.
+
+## CLI usage
+
+```bash
+php src/weather-cli.php --city="Berlin" --units=metric
+php src/weather-cli.php --help
 ```
+
+Options must use `--name=value` syntax. Invalid options and service failures are written to stderr with a non-zero exit status.
+
+### Offline fixture mode
+
+Fixture mode does not load `config.php`, require an API key, use the network, or populate the cache:
+
+```bash
+php src/weather-cli.php --city=Amsterdam --units=metric --fixture=data/response-example.json
+```
+
+The city option is retained for a consistent command interface; location values come from the fixture response.
+
+## Caching
+
+Successful live responses are stored in the ignored `cache/` directory for 10 minutes. Keys use normalized city names and units. Cache read/write failures are treated as misses and do not break valid API requests.
+
+## Tests and checks
+
+Tests use fixtures and fake HTTP clients, never the real API.
+
+```bash
+composer validate --strict
+composer test
+composer lint
+```
+
+## Structure
+
+- `src/` — shared application, HTTP, cache, CLI, and formatting code
+- `assets/` — web CSS and JavaScript
+- `skycons/` — preserved Skycons library
+- `tests/` — PHPUnit unit tests
+- `data/response-example.json` — offline example response

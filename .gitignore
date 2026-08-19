@@ -1,7 +1,11 @@
 config.php
-
 data/city.list.json
-
-vendor/
+.env
+/cache/
+/logs/
+/vendor/
+.phpunit.cache/
+.phpunit.result.cache
+*.log
 .idea/
 .air/settings.json
