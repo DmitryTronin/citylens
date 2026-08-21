@@ -2,104 +2,80 @@
 
 declare(strict_types=1);
 
-$configPath = dirname(__FILE__) . '/../config.php';
-
-if (!file_exists($configPath)) {
-    $errorMsg = 'Error: config.php file is missing. Please create it and add your OpenWeatherMap API key.';
-    error_log($errorMsg);
-    die(
-        '<b>Error:</b> <code>config.php</code> file is missing.<br>' .
-        'Please create it and add your OpenWeatherMap API key.'
-    );
+/** Shared weather fetching and formatting helpers for the web UI and CLI. */
+function weatherConfig(): void
+{
+    $configPath = dirname(__DIR__) . '/config.php';
+    if (!file_exists($configPath)) {
+        throw new RuntimeException('config.php file is missing.');
+    }
+    require_once $configPath;
+    if (!defined('openweathermap_api_key') || !openweathermap_api_key) {
+        throw new RuntimeException('OpenWeatherMap API key is not configured.');
+    }
 }
 
-require_once $configPath;
-
-if (!defined('openweathermap_api_key') || !openweathermap_api_key) {
-    $errorMsg = 'Error: OpenWeatherMap API key is not defined in config.php. Add: define("openweathermap_api_key", "your-api-key");';
-    error_log($errorMsg);
-    die(
-        '<b>Error:</b> OpenWeatherMap API key is not defined in <code>config.php</code>.<br>' .
-        'Add: <code>define("openweathermap_api_key", "your-api-key");</code>'
-    );
+function weatherRequest(string $url): array
+{
+    $ch = curl_init($url);
+    if (!$ch) throw new RuntimeException('Failed to initialize cURL.');
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_SSL_VERIFYPEER => true, CURLOPT_TIMEOUT => 15]);
+    $response = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $error = curl_error($ch);
+    curl_close($ch);
+    if ($response === false) throw new RuntimeException('Weather request failed: ' . $error);
+    $data = json_decode($response, true);
+    if (!is_array($data) || $status >= 400 || isset($data['cod']) && (int) $data['cod'] >= 400) {
+        throw new RuntimeException((string) ($data['message'] ?? 'No weather data available.'));
+    }
+    return $data;
 }
 
-$apiKey = (string) openweathermap_api_key;
-$cityId = '2759794';
-$openWeatherApiUrl = 'https://api.openweathermap.org/data/2.5/weather?id=' . urlencode($cityId) . '&lang=en&units=metric&APPID=' . urlencode($apiKey);
-
-$ch = curl_init();
-
-if (!$ch) {
-    $errorMsg = 'Error: Failed to initialize cURL';
-    error_log($errorMsg);
-    die($errorMsg);
+function weatherIcon(int $id): string
+{
+    return match (true) {
+        $id >= 200 && $id < 300 => 'THUNDER', $id >= 300 && $id < 400 => 'SLEET',
+        $id >= 500 && $id < 600 => $id === 511 ? 'SNOW' : 'RAIN',
+        $id >= 600 && $id < 700 => 'SNOW', $id === 741 => 'FOG', $id >= 700 && $id < 800 => 'FOG',
+        $id === 800 => 'CLEAR_DAY', $id <= 802 => 'PARTLY_CLOUDY_DAY', default => 'CLOUDY',
+    };
 }
 
-curl_setopt($ch, CURLOPT_HEADER, 0);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-curl_setopt($ch, CURLOPT_URL, $openWeatherApiUrl);
-curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-curl_setopt($ch, CURLOPT_VERBOSE, 0);
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-$response = curl_exec($ch);
-
-if ($response === false) {
-    $errorMsg = 'Error: "' . curl_error($ch) . '" - Code: ' . curl_errno($ch);
-    error_log($errorMsg);
-    die($errorMsg);
+function fetchCity(string $name): array
+{
+    weatherConfig();
+    $name = trim($name);
+    if ($name === '') throw new RuntimeException('City name is empty.');
+    $cacheDir = dirname(__DIR__) . '/data';
+    $cacheFile = $cacheDir . '/weather-' . hash('sha256', strtolower($name)) . '.json';
+    if (is_file($cacheFile) && filemtime($cacheFile) >= time() - 600) {
+        $cached = json_decode((string) file_get_contents($cacheFile), true);
+        if (is_array($cached)) return $cached;
+    }
+    $key = urlencode((string) openweathermap_api_key);
+    $query = urlencode($name);
+    $base = 'https://api.openweathermap.org/data/2.5/';
+    $current = weatherRequest($base . 'weather?q=' . $query . '&lang=en&units=metric&APPID=' . $key);
+    $forecast = weatherRequest($base . 'forecast?q=' . $query . '&lang=en&units=metric&APPID=' . $key);
+    $days = [];
+    foreach ($forecast['list'] ?? [] as $item) {
+        $date = date('Y-m-d', (int) $item['dt']);
+        if (!isset($days[$date]) && count($days) < 5) $days[$date] = ['date' => $date, 'temp' => round((float) $item['main']['temp']), 'description' => (string) $item['weather'][0]['description'], 'icon' => weatherIcon((int) $item['weather'][0]['id']), 'precipitation' => round(((float) ($item['pop'] ?? 0)) * 100), 'clouds' => (int) ($item['clouds']['all'] ?? 0)];
+    }
+    $result = ['requested' => $name, 'name' => (string) $current['name'], 'country' => (string) ($current['sys']['country'] ?? ''), 'condition' => (string) $current['weather'][0]['description'], 'icon' => weatherIcon((int) $current['weather'][0]['id']), 'temp' => round((float) $current['main']['temp']), 'feels_like' => round((float) $current['main']['feels_like']), 'humidity' => (int) $current['main']['humidity'], 'wind' => (float) ($current['wind']['speed'] ?? 0), 'clouds' => (int) ($current['clouds']['all'] ?? 0), 'precipitation' => round(((float) ($forecast['list'][0]['pop'] ?? 0)) * 100), 'forecast' => array_values($days)];
+    if (!is_dir($cacheDir)) mkdir($cacheDir, 0775, true);
+    file_put_contents($cacheFile, json_encode($result));
+    return $result;
 }
 
-curl_close($ch);
-$data = json_decode($response, false, 512, JSON_THROW_ON_ERROR);
-
-
-if (!isset($data->weather[0]->description)) {
-    $errorMsg = 'No weather data available';
-    error_log($errorMsg);
-    die($errorMsg);
+function fetchCities(array $names): array
+{
+    $results = [];
+    foreach (array_slice($names, 0, 3) as $name) {
+        try { $results[] = fetchCity((string) $name); }
+        catch (Throwable $e) { $results[] = ['requested' => trim((string) $name), 'error' => $e->getMessage()]; }
+    }
+    return $results;
 }
-
-$currentWeather = (string) $data->weather[0]->description;
-$weatherId = (int) $data->weather[0]->id;
-
-$weatherIcon = match (true) {
-    $weatherId >= 200 && $weatherId < 300 => 'THUNDER',
-    $weatherId >= 300 && $weatherId < 400 => 'SLEET',
-    $weatherId >= 500 && $weatherId < 600 => ($weatherId == 511 ? 'SNOW' : 'RAIN'),
-    $weatherId >= 600 && $weatherId < 700 => match (true) {
-        $weatherId == 611 || $weatherId == 612 || $weatherId == 613 => 'SLEET',
-        default => 'SNOW',
-    },
-    $weatherId >= 700 && $weatherId < 800 => match ($weatherId) {
-        741 => 'FOG',
-        781 => 'WIND',
-        default => 'FOG',
-    },
-    $weatherId == 800 => 'CLEAR_DAY',
-    $weatherId == 801 => 'PARTLY_CLOUDY_DAY',
-    $weatherId == 802 => 'PARTLY_CLOUDY_DAY',
-    $weatherId == 803, $weatherId == 804 => 'CLOUDY',
-    default => 'PARTLY_CLOUDY_DAY',
-};
-$feelsLike = (int) round($data->main->feels_like);
-$windSpeed = (float) $data->wind->speed;
-$cityName = (string) $data->name;
-$country = (string) $data->sys->country;
-$temp = (int) round($data->main->temp);
-$humidity = (int) $data->main->humidity;
-
-$windCondition = match (true) {
-    $windSpeed < 1 => 'almost no wind',
-    $windSpeed <= 10 => 'light breeze',
-    $windSpeed <= 20 => 'moderate wind',
-    $windSpeed <= 30 => 'strong wind',
-    default => 'storm outside',
-};
-
-echo "<p><span class='weather-label'>Location</span> <span class='weather-value'>{$cityName}, {$country}</span></p>";
-echo "<p><span class='weather-label'>Condition</span> <span class='weather-value'>" . ucfirst($currentWeather) . "</span></p>";
-echo "<p><span class='weather-label'>Temperature</span> <span class='weather-value'>{$temp}°C (feels like {$feelsLike}°C)</span></p>";
-echo "<p><span class='weather-label'>Humidity</span> <span class='weather-value'>{$humidity}%</span></p>";
-echo "<p><span class='weather-label'>Wind</span> <span class='weather-value'>{$windSpeed} m/s - " . ucfirst($windCondition) . "</span></p>";
 
