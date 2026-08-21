@@ -1,173 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="favicon.ico" type="image/x-icon">
-    <title>CityLens Weather</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            min-height: 100vh;
-            padding: 20px;
-            color: #2d3748;
-        }
-        
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-            padding-top: 40px;
-        }
-        
-        .app-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        h1 {
-            color: #1e293b;
-            font-size: 2.5rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-            text-shadow: none;
-        }
-        
-        .subtitle {
-            color: #64748b;
-            font-size: 1.1rem;
-            font-weight: 300;
-        }
-        
-        .weather-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 30px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-        
-        .weather-icon-container {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 24px;
-        }
-        
-        canvas#weather-icon {
-            border-radius: 16px;
-            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
-            padding: 16px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-        }
-        
-        .weather-info {
-            font-size: 16px;
-            line-height: 1.6;
-        }
-        
-        .weather-info p {
-            margin: 12px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
-        
-        .weather-info p:last-child {
-            border-bottom: none;
-        }
-        
-        .weather-label {
-            font-weight: 500;
-            color: #4a5568;
-            text-transform: uppercase;
-            font-size: 0.9rem;
-            letter-spacing: 0.5px;
-        }
-        
-        .weather-value {
-            font-weight: 600;
-            color: #2d3748;
-        }
-        
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            color: #64748b;
-            font-size: 0.9rem;
-        }
-        
-        @media (max-width: 768px) {
-            .container {
-                padding-top: 20px;
-            }
-            
-            h1 {
-                font-size: 2rem;
-            }
-            
-            .weather-card {
-                margin: 0 10px;
-                padding: 24px 20px;
-            }
-        }
-    </style>
-    <script src="skycons/skycons.js"></script>
-</head>
-<body>
-    <div class="container">
-        <div class="app-header">
-            <h1>CityLens Weather</h1>
-            <p class="subtitle">Real-time weather information</p>
-        </div>
-        
-        <div class="weather-card">
-            <div class="weather-icon-container">
-                <canvas id="weather-icon" width="96" height="96"></canvas>
-            </div>
-            <div class="weather-info">
-                <?php include 'src/weather.php'; ?>
-            </div>
-        </div>
-        
-        <div class="footer">
-            Powered by OpenWeatherMap
-        </div>
-    </div>
-    <script>
-        const skycons = new Skycons({
-            monochrome: false,
-            colors: {
-                main: "#667eea",       // Modern purple-blue
-                sun: "#f59e0b",        // Modern amber for the sun
-                moon: "#e5e7eb",       // Modern gray for the moon
-                fog: "#9ca3af",        // Modern gray for fog
-                fogbank: "#d1d5db",    // Light gray for fogbank
-                light_cloud: "#f3f4f6", // Very light gray for light clouds
-                cloud: "#d1d5db",      // Light gray for clouds
-                dark_cloud: "#6b7280", // Dark gray for dark clouds
-                thunder: "#7c3aed",    // Modern purple for thunder
-                snow: "#f3f4f6",       // Very light gray for snow
-                hail: "#60a5fa",       // Modern blue for hail
-                sleet: "#60a5fa",      // Modern blue for sleet
-                wind: "#9ca3af",       // Modern gray for wind
-                leaf: "#10b981",       // Modern emerald for leaf
-                rain: "#3b82f6"        // Modern blue for rain
-            }
-        });
-        const weatherCondition = "<?php echo $weatherIcon; ?>"; // PHP variable for icon
-        skycons.add("weather-icon", Skycons[weatherCondition]);
-        skycons.play();
-    </script>
-</body>
-</html>
+<?php
+require_once __DIR__ . '/src/weather.php';
+$rawCities = isset($_GET['cities']) ? (string) $_GET['cities'] : 'Berlin';
+$cityNames = array_values(array_filter(array_map('trim', explode(',', $rawCities))));
+$cityNames = array_slice(array_unique($cityNames), 0, 3);
+$cities = fetchCities($cityNames ?: ['Berlin']);
+$valid = array_values(array_filter($cities, fn($city) => !isset($city['error'])));
+$winner = function (string $metric, bool $lowest = false) use ($valid): array {
+    if (!$valid) return [];
+    $values = [];
+    foreach ($valid as $index => $city) $values[$index] = (float) ($city[$metric] ?? 0);
+    $best = $lowest ? min($values) : max($values);
+    return array_keys(array_filter($values, fn($value) => $value === $best));
+};
+$warmest = $winner('temp'); $sunniest = $winner('clouds', true); $driest = $winner('precipitation', true);
+function h(string $value): string { return htmlspecialchars($value, ENT_QUOTES, 'UTF-8'); }
+?>
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>CityLens Weather</title><link rel="icon" href="favicon.ico"><script src="skycons/skycons.js"></script><style>
+:root{--accent:#667eea;--bg:#f1f5f9;--card:#fff;--text:#263244;--muted:#64748b}*{box-sizing:border-box}body{margin:0;padding:24px;background:linear-gradient(135deg,var(--bg),#dbeafe);color:var(--text);font:16px Inter,system-ui,sans-serif}.container{max-width:1200px;margin:auto}.app-header{text-align:center;margin:28px 0}.app-header h1{margin:0 0 8px;font-size:2.4rem}.subtitle{color:var(--muted)}.search{text-align:center;margin-bottom:24px}.search input{width:min(700px,90%);padding:13px 16px;border:1px solid #cbd5e1;border-radius:12px;font-size:1rem}.search button{padding:13px 20px;margin-left:6px;border:0;border-radius:12px;background:var(--accent);color:white;font-weight:600}.comparison{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}.weather-card{background:var(--card);border-radius:20px;padding:24px;box-shadow:0 12px 30px #0001}.weather-icon-container{text-align:center}.weather-icon{width:96px;height:96px}.weather-info p{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #e2e8f0;padding:9px 0;margin:0}.weather-label{color:var(--muted);font-size:.85rem;text-transform:uppercase}.weather-value{font-weight:600;text-align:right}.winner{color:var(--accent);font-size:.75rem;margin-left:5px}.forecast{margin-top:18px}.forecast h3{font-size:1rem}.forecast-row{display:grid;grid-template-columns:70px 1fr auto;gap:8px;padding:7px 0;border-top:1px solid #e2e8f0;font-size:.88rem}.error-card{border:2px solid #f87171}.footer{text-align:center;color:var(--muted);margin:28px}@media(max-width:600px){body{padding:14px}.app-header h1{font-size:2rem}.search button{margin-top:8px}}
+</style></head><body><div class="container"><header class="app-header"><h1>CityLens Weather</h1><p class="subtitle">Compare weather in up to three cities</p></header><form class="search"><input name="cities" value="<?= h(implode(', ', $cityNames)) ?>" placeholder="Berlin, Lisbon, Tokyo" aria-label="Cities"><button>Compare</button></form><main class="comparison">
+<?php foreach ($cities as $index => $city): ?><article class="weather-card <?= isset($city['error']) ? 'error-card' : '' ?>"><?php if (isset($city['error'])): ?><h2><?= h($city['requested']) ?></h2><p><?= h($city['error']) ?></p><?php continue; endif; ?><div class="weather-icon-container"><canvas class="weather-icon" id="weather-icon-<?= $index ?>" width="96" height="96"></canvas></div><h2><?= h($city['name']) ?>, <?= h($city['country']) ?></h2><div class="weather-info"><p><span class="weather-label">Condition</span><span class="weather-value"><?= h(ucfirst($city['condition'])) ?></span></p><p><span class="weather-label">Temperature</span><span class="weather-value"><?= $city['temp'] ?>°C <?php if (in_array($index,$warmest,true)): ?><span class="winner">warmest</span><?php endif; ?></span></p><p><span class="weather-label">Feels like</span><span class="weather-value"><?= $city['feels_like'] ?>°C</span></p><p><span class="weather-label">Humidity</span><span class="weather-value"><?= $city['humidity'] ?>%</span></p><p><span class="weather-label">Clouds</span><span class="weather-value"><?= $city['clouds'] ?>% <?php if (in_array($index,$sunniest,true)): ?><span class="winner">sunniest</span><?php endif; ?></span></p><p><span class="weather-label">Precipitation</span><span class="weather-value"><?= $city['precipitation'] ?>% <?php if (in_array($index,$driest,true)): ?><span class="winner">driest</span><?php endif; ?></span></p><p><span class="weather-label">Wind</span><span class="weather-value"><?= $city['wind'] ?> m/s</span></p></div><div class="forecast"><h3>5-day forecast</h3><?php foreach ($city['forecast'] as $day): ?><div class="forecast-row"><span><?= h(date('D',strtotime($day['date']))) ?></span><span><?= h(ucfirst($day['description'])) ?></span><strong><?= $day['temp'] ?>°C</strong></div><?php endforeach; ?></div></article><?php endforeach; ?></main><div class="footer">Powered by OpenWeatherMap</div></div><script>
+const skycons=new Skycons({monochrome:false});<?php foreach ($cities as $index=>$city): if (!isset($city['error'])): ?>skycons.add('weather-icon-<?=$index?>',Skycons[<?= json_encode($city['icon']) ?>]);<?php endif; endforeach; ?>skycons.play();
+</script></body></html>
