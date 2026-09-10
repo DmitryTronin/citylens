@@ -45,14 +45,9 @@ configure_shell() {
 }
 
 prepare_dependencies() {
-  command -v php >/dev/null 2>&1 || fail 'PHP is required but was not found'
-  php -r 'exit(version_compare(PHP_VERSION, "8.2.0", ">=") ? 0 : 1);' || fail 'PHP 8.2 or newer is required'
-  php -m | grep -Fxq curl || fail 'PHP cURL extension is required'
-
-  if command -v composer >/dev/null 2>&1 && [ -f "$APP_DIR/composer.json" ]; then
-    log 'Installing PHP dependencies'
-    composer install --no-interaction --prefer-dist --no-progress --working-dir="$APP_DIR"
-  fi
+  command -v docker >/dev/null 2>&1 || fail 'Docker is required but was not found'
+  log 'Pulling PHP 8.2 Apache image'
+  docker pull php:8.2-apache
 
   if [ -z "${OPENWEATHERMAP_API_KEY:-}" ]; then
     fail 'OPENWEATHERMAP_API_KEY is not configured'
@@ -65,8 +60,8 @@ PHP_CONFIG
 
 start_server() {
   log "Starting PHP server on 0.0.0.0:${PORT}"
-  cd "$APP_DIR"
-  nohup php -S "0.0.0.0:${PORT}" -t "$APP_DIR" >/tmp/citylens-php.log 2>&1 &
+  docker rm -f citylens-php >/dev/null 2>&1 || true
+  docker run -d --name citylens-php -p "${PORT}:80" -v "$APP_DIR:/var/www/html" php:8.2-apache >/tmp/citylens-php.log
 }
 
 healthcheck() {
