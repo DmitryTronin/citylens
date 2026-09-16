@@ -13,8 +13,7 @@ if [ -n "${OPENWEATHERMAP_API_KEY:-}" ]; then
   else
     log "PHP is unavailable locally; pulling the cached PHP runtime image"
     docker pull php:8.2-cli
-    docker run --rm -e OPENWEATHERMAP_API_KEY -v "$PWD:/app" -w /app php:8.2-cli \
-      php -r 'file_put_contents("config.php", "<?php\\ndefine(\\"openweathermap_api_key\\", " . var_export(getenv("OPENWEATHERMAP_API_KEY"), true) . ");\\n");'
+    printf '<?php\ndefine("openweathermap_api_key", "%s");\n' "$OPENWEATHERMAP_API_KEY" > config.php
   fi
 else
   printf '[startup] OPENWEATHERMAP_API_KEY is not set\n' >&2
