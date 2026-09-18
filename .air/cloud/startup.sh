@@ -12,11 +12,23 @@ log() {
   printf '[citylens] %s\n' "$*"
 }
 
+if ! command -v php >/dev/null 2>&1; then
+  log "installing PHP 8.2 runtime and cURL extension"
+  sudo apt-get update
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y php-cli php-curl
+fi
+
+if ! command -v composer >/dev/null 2>&1; then
+  log "installing Composer"
+  sudo apt-get update
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y composer
+fi
+
 log "checking PHP runtime"
 command -v php >/dev/null
 php -r 'if (PHP_VERSION_ID < 80200) { fwrite(STDERR, "PHP 8.2 or newer is required\n"); exit(1); } if (!extension_loaded("curl")) { fwrite(STDERR, "PHP cURL extension is required\n"); exit(1); }'
 
-if command -v composer >/dev/null 2>&1 && [ -f "$APP_DIR/composer.json" ]; then
+if [ -f "$APP_DIR/composer.json" ]; then
   log "installing PHP dependencies"
   composer install --no-interaction --prefer-dist --no-progress --working-dir="$APP_DIR"
 fi
