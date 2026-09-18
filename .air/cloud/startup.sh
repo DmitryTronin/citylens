@@ -8,8 +8,15 @@ log_step() {
     printf '[citylens startup] %s\n' "$1"
 }
 
+composer_bin="${HOME}/.local/bin/composer"
+mkdir -p "$(dirname "$composer_bin")"
+if [ ! -x "$composer_bin" ]; then
+    log_step "Installing Composer in the user tool directory"
+    curl --silent --show-error --fail https://getcomposer.org/installer | php -- --install-dir="$(dirname "$composer_bin")" --filename="$(basename "$composer_bin")"
+fi
+
 log_step "Installing PHP dependencies"
-composer install --no-interaction --prefer-dist
+"$composer_bin" install --no-interaction --prefer-dist
 
 if [ -z "${OPENWEATHER_API_KEY:-}" ]; then
     printf '[citylens startup] OPENWEATHER_API_KEY is not configured\n' >&2
