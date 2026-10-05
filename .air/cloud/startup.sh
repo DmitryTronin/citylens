@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eu
+set -euo pipefail
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 cd "$ROOT_DIR"
@@ -43,11 +43,26 @@ if ! command -v docker >/dev/null 2>&1; then
     exit 1
 fi
 
+image_cache="$HOME/.cache/citylens/php-8.2-apache.tar.gz"
+mkdir -p "$(dirname "$image_cache")"
+
 log "Preparing PHP 8.2 Apache image."
 if docker image inspect php:8.2-apache >/dev/null 2>&1; then
     log "Using cached php:8.2-apache image."
+elif [ -s "$image_cache" ]; then
+    log "Loading php:8.2-apache from the snapshot cache."
+    gzip --decompress --stdout "$image_cache" | docker load
 else
     docker pull php:8.2-apache
+fi
+
+if [ ! -s "$image_cache" ]; then
+    image_cache_tmp=$(mktemp "$image_cache.XXXXXX")
+    trap 'rm -f "$image_cache_tmp"' EXIT
+    log "Saving PHP image layers to the snapshot cache."
+    docker save php:8.2-apache | gzip --fast > "$image_cache_tmp"
+    mv "$image_cache_tmp" "$image_cache"
+    trap - EXIT
 fi
 
 log "Writing the ignored runtime config.php file."
