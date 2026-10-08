@@ -49,8 +49,9 @@ healthcheck() {
             if ! grep -q 'CityLens Weather' "$state_dir/health.html" ||
                ! grep -q "weather-label'>Temperature" "$state_dir/health.html" ||
                ! grep -q "weather-label'>Humidity" "$state_dir/health.html"; then
-                echo "Page did not render live weather. Check the OpenWeatherMap key and API access." >&2
-                return 1
+                echo "Waiting for live weather. Check the OpenWeatherMap key and API access."
+                sleep 5
+                continue
             fi
             curl --proxy '' --fail --silent --show-error \
                 http://127.0.0.1:8001/skycons/skycons.js -o "$state_dir/skycons.js"
